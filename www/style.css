@@ -1,0 +1,74 @@
+/* Reset de base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(120deg, #f4f4f4, #e0e0ff);
+  color:#333;
+  line-height: 1.6;
+}
+
+header {
+  background-color: #d1ef4a;
+  color: white;
+  padding: 20px;
+  text-align: center;
+}
+
+header h1 {
+  font-size: 2.5em;
+  margin-bottom: 5px;
+}
+
+header p {
+  font-style: italic;
+  font-size: 1em;
+}
+
+main {
+  padding: 30px;
+  text-align: center;
+}
+
+.cta {
+  margin-top: 20px;
+}
+
+.cta a {
+  display: inline-block;
+  padding: 12px 25px;
+  background-color: #4a4aef;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.cta a:hover {
+  background-color: #2d2db3;
+}
+
+footer {
+  background-color: #f8f8f8;
+  text-align: center;
+  padding: 15px;
+  font-size: 0.9em;
+  color: #777;
+  position: fixed;
+  width: 100%;
+  bottom: 0;
+
+}
+
+.question {
+    font-size: 2.2em; /* un peu plus grand que les titres normaux */
+    font-weight: bold;
+    color: #4099ff;
+    margin: 30px 0;
+    text-align: center; /* pour la mettre bien au milieu */
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}

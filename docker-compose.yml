@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  db_mirrorme:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: mirrorme_db
+      MYSQL_USER: mirrorme_user
+      MYSQL_PASSWORD: secretpass
+    ports:
+      - "3310:3306"
+    volumes:
+      - db_data_mirrorme:/var/lib/mysql
+
+  phpmyadmin_mirrorme:
+    image: phpmyadmin
+    restart: always
+    ports:
+      - "8082:80"
+    environment:
+      PMA_HOST: db_mirrorme
+      PMA_PORT: 3306
+    depends_on:
+      - db_mirrorme
+
+  app_mirrorme:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8083:80"
+    volumes:
+      - ./www:/var/www/html
+    depends_on:
+      - db_mirrorme
+
+volumes:
+  db_data_mirrorme:
