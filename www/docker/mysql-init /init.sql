@@ -1,5 +1,5 @@
 CREATE DATABASE IF NOT EXISTS mirror_me CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE mirror_me;
+USE mirrorme_db;
 
 CREATE TABLE utilisateurs (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -11,7 +11,7 @@ CREATE TABLE utilisateurs (
   date_inscription TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--CREATE TABLE stars (
+CREATE TABLE stars (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nom VARCHAR(100) NOT NULL,
   domaine VARCHAR(100),
@@ -70,4 +70,4 @@ CREATE TABLE journal_entries (
   date_checked DATETIME NOT NULL,
   UNIQUE KEY(utilisateur_id,objectif_id) );
 
-   
+

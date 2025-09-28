@@ -3,12 +3,13 @@ version: '3.8'
 services:
   db_mirrorme:
     image: mysql:8.0
+    container_name: mirrorme_backup-db_mirrorme-1
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: root        # ton mot de passe actuel
       MYSQL_DATABASE: mirrorme_db
       MYSQL_USER: mirrorme_user
-      MYSQL_PASSWORD: secretpass
+      MYSQL_PASSWORD: secretpass       # pour l'utilisateur mirrorme_user
     ports:
       - "3310:3306"
     volumes:
@@ -16,11 +17,12 @@ services:
 
   phpmyadmin_mirrorme:
     image: phpmyadmin
+    container_name: mirrorme_backup-phpmyadmin_mirrorme-1
     restart: always
     ports:
-      - "8082:80"
+      - "8085:80"
     environment:
-      PMA_HOST: db_mirrorme
+      PMA_HOST: db_mirrorme           # référence le service MySQL
       PMA_PORT: 3306
     depends_on:
       - db_mirrorme
@@ -29,6 +31,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: mirrorme_backup-app_mirrorme-1
     ports:
       - "8083:80"
     volumes:
