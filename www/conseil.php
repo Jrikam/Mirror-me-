@@ -1,68 +1,68 @@
 <?php
 session_start();
 
-// Vérification du résultat du questionnaire
+// On vérifie qu'il y a un résultat de questionnaire
 if (!isset($_SESSION['trait_result'])) {
-    die("Aucun résultat disponible. Remplis d'abord le questionnaire.");
+    die("Tu n'as pas encore rempli le questionnaire.");
 }
 
 $trait = $_SESSION['trait_result'];
 
-// Tableau des conseils par trait
-$conseils_traits = [
+// Conseils simples pour chaque trait
+$conseils = [
     "acharnement" => [
-        "Fixe-toi des objectifs clairs chaque jour et note tes progrès.",
-        "Ne procrastine pas, attaque les tâches importantes dès le matin.",
-        "Apprends à te féliciter pour chaque effort fourni."
+        "Note tes objectifs chaque jour et vois tes progrès.",
+        "Commence par les tâches importantes sans attendre.",
+        "Félicite-toi pour chaque effort."
     ],
     "creativite" => [
-        "Consacre 30 min par jour à une activité créative (dessin, écriture, musique...).",
-        "Observe le monde autour de toi et note tes idées originales.",
-        "Cherche à résoudre les problèmes de manière inattendue."
+        "Prends 30 min pour créer (dessin, écriture, musique...).",
+        "Observe autour de toi et note tes idées.",
+        "Essaie de résoudre les problèmes autrement que d’habitude."
     ],
     "perserverance" => [
-        "Ne te décourage pas face aux obstacles, note tes réussites.",
-        "Prends l’habitude de finir ce que tu commences.",
-        "Entoure-toi de personnes qui te motivent à persévérer."
+        "Ne te décourage pas, note tes petites victoires.",
+        "Finis ce que tu commences.",
+        "Entoure-toi de personnes qui t’encouragent."
     ],
     "reflexion" => [
-        "Avant chaque décision, note les avantages et inconvénients.",
-        "Prends du temps chaque jour pour réfléchir à tes objectifs.",
-        "Apprends de chaque erreur pour progresser."
+        "Avant de décider, pense aux avantages et inconvénients.",
+        "Prends un moment chaque jour pour réfléchir à tes objectifs.",
+        "Apprends de tes erreurs pour avancer."
     ],
     "leadership" => [
-        "Prends des initiatives dans ton entourage ou travail.",
-        "Écoute activement et motive les autres.",
-        "Assume tes choix et inspire par l’exemple."
+        "Prends des initiatives autour de toi.",
+        "Écoute les autres et motive-les.",
+        "Montre l’exemple et assume tes choix."
     ],
     "engagement" => [
-        "Choisis une cause qui te tient à cœur et agis chaque semaine.",
-        "Informe-toi pour mieux défendre ce qui est important pour toi.",
-        "Encourage les autres à s’impliquer à leurs niveaux."
+        "Choisis une cause qui te tient à cœur et agis régulièrement.",
+        "Informe-toi pour mieux défendre tes idées.",
+        "Encourage les autres à faire pareil."
     ]
 ];
 
-// Récupération des conseils correspondant au trait
-$conseils = $conseils_traits[$trait] ?? ["Sois toi-même et explore tes forces !"];
+// Récupère les conseils du trait courant ou un conseil par défaut
+$mesConseils = $conseils[$trait] ?? ["Sois toi-même et découvre tes forces !"];
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Conseils Mirror Me</title>
+    <title>Conseils MirrorMe</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             padding: 40px;
             text-align: center;
-            background-color: #f9f9f9;
+            background: #f9f9f9;
         }
         h1 {
             margin-bottom: 20px;
         }
         ul {
-            text-align: left;
             display: inline-block;
+            text-align: left;
             margin-top: 20px;
         }
         li {
@@ -76,7 +76,6 @@ $conseils = $conseils_traits[$trait] ?? ["Sois toi-même et explore tes forces !
             color: #fff;
             text-decoration: none;
             border-radius: 5px;
-            transition: background 0.3s;
         }
         a:hover {
             background: #555;
@@ -86,12 +85,11 @@ $conseils = $conseils_traits[$trait] ?? ["Sois toi-même et explore tes forces !
 <body>
     <h1>Développe tes qualités !</h1>
     <p>
-        Voici quelques conseils pour cultiver les qualités associées à ton profil : 
-        <strong><?= htmlspecialchars($trait); ?></strong>
+        Voici des conseils pour ton profil : <strong><?= htmlspecialchars($trait); ?></strong>
     </p>
     <ul>
-        <?php foreach ($conseils as $tip): ?>
-            <li>✅ <?= htmlspecialchars($tip); ?></li>
+        <?php foreach ($mesConseils as $c): ?>
+            <li>✅ <?= htmlspecialchars($c) ?></li>
         <?php endforeach; ?>
     </ul>
     <a href="categories.php">Retour aux catégories</a>

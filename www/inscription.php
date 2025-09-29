@@ -5,28 +5,29 @@ require_once 'pdo.php';
 $message = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nom = trim($_POST['nom']);
-    $email = trim($_POST['email']);
-    $password = $_POST['password'];
+    $nom = trim($_POST['nom'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
 
-    if (!empty($nom) && !empty($email) && !empty($password)) {
-        // Vérifier si l'email existe déjà
-        $stmt = $pdo->prepare("SELECT id FROM utilisateurs WHERE email = ?");
-        $stmt->execute([$email]);
+    if ($nom && $email && $password) {
+        // Vérifie si l'email existe déjà
+        $check = $pdo->prepare("SELECT id FROM utilisateurs WHERE email = ?");
+        $check->execute([$email]);
 
-        if ($stmt->rowCount() > 0) {
-            $message = "❌ Cet email est déjà utilisé.";
+        if ($check->fetch()) {
+            $message = "❌ Cet email est déjà pris.";
         } else {
             $hash = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $pdo->prepare("INSERT INTO utilisateurs (nom, email, mot_de_passe) VALUES (?, ?, ?)");
-            if ($stmt->execute([$nom, $email, $hash])) {
-                $message = "✅ Inscription réussie ! <a href='connexion.php'>Connectez-vous</a>";
+            $insert = $pdo->prepare("INSERT INTO utilisateurs (nom, email, mot_de_passe) VALUES (?, ?, ?)");
+            
+            if ($insert->execute([$nom, $email, $hash])) {
+                $message = "✅ Inscription réussie ! <a href='connexion.php'>Se connecter</a>";
             } else {
-                $message = "❌ Erreur lors de l'inscription.";
+                $message = "⚠️ Une erreur est survenue, réessaie.";
             }
         }
     } else {
-        $message = "⚠️ Tous les champs sont obligatoires.";
+        $message = "⚠️ Merci de remplir tous les champs.";
     }
 }
 ?>
@@ -34,20 +35,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Inscription - MirrorMe</title>
-    <link rel="stylesheet" href="style.css?v=<?php echo time(); ?>">
+    <title>Inscription - Mirror Me</title>
+    <link rel="stylesheet" href="style.css?v=<?= time(); ?>">
 </head>
 <body>
-    <h1>Créer un compte</h1>
-    <?php if (!empty($message)) echo "<p>$message</p>"; ?>
+    <h1>Créer ton compte</h1>
 
-    <form method="POST">
-        <input type="text" name="nom" placeholder="Nom" required>
-        <input type="email" name="email" placeholder="Email" required>
-        <input type="password" name="password" placeholder="Mot de passe" required>
+    <?php if ($message): ?>
+        <p><?= $message ?></p>
+    <?php endif; ?>
+
+    <form method="post">
+        <input type="text" name="nom" placeholder="Ton nom" required>
+        <input type="email" name="email" placeholder="Ton email" required>
+        <input type="password" name="password" placeholder="Ton mot de passe" required>
         <button type="submit">S'inscrire</button>
     </form>
 
-    <p><a href="connexion.php">Déjà un compte ? Connectez-vous</a></p>
+    <p><a href="connexion.php">Déjà inscrit ? Clique ici</a></p>
 </body>
 </html>

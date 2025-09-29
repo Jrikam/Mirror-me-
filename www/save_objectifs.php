@@ -11,14 +11,14 @@ $objectifs_coches = $_POST['objectifs'] ?? [];
 $stmt = $pdo->prepare("DELETE FROM user_objectives WHERE utilisateur_id = ?");
 $stmt->execute([$user_id]);
 
-// Insérer les nouveaux objectifs cochés
+// Insérer les nouveaux objectifs cochés avec date_checked
 if (!empty($objectifs_coches)) {
-    $stmt = $pdo->prepare("INSERT INTO user_objectives (utilisateur_id, objectif_id) VALUES (?, ?)");
+    $stmt = $pdo->prepare("INSERT INTO user_objectives (utilisateur_id, objectif_id, date_checked) VALUES (?, ?, NOW())");
     foreach ($objectifs_coches as $id_obj) {
         $stmt->execute([$user_id, $id_obj]);
     }
 }
 
-// Redirection vers la page objectifs
+// Redirection vers la page objectifs pour recalculer la progression
 header("Location: objectifs.php");
 exit;

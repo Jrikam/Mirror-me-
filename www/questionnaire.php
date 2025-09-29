@@ -1,90 +1,86 @@
 <?php
 session_start();
-require 'pdo.php'; // connexion PDO
+require 'pdo.php'; // connexion à la base
 
 // =====================
-// 1. Définition des catégories et questions
+// 1. Catégories + questions
 // =====================
 $categories = [
     "Sport" => [
-        ['texte' => "Quand tu tombes, est-ce que tu as tendance à te relever encore plus motivé(e) ?", 'trait' => 'confiance'],
-        ['texte' => "Aimes-tu te fixer des objectifs et travailler régulièrement pour les atteindre ?", 'trait' => 'confiance'],
-        ['texte' => "Es-tu compétitif(ve), ou est-ce que tu préfères surtout te dépasser toi-même ?", 'trait' => 'confiance'],
-        ['texte' => "Penses-tu que l’échec est une étape nécessaire pour progresser ?", 'trait' => 'confiance'],
+        ['texte' => "Quand tu rates, tu as plutôt envie d’abandonner ou de revenir plus fort ?", 'trait' => 'confiance'],
+        ['texte' => "Tu te fixes des objectifs concrets que tu bosses régulièrement ?", 'trait' => 'confiance'],
+        ['texte' => "Es-tu compétitif(ve) ou tu préfères surtout te dépasser toi-même ?", 'trait' => 'confiance'],
+        ['texte' => "Tu vois l’échec comme un frein ou une étape pour progresser ?", 'trait' => 'confiance'],
     ],
     "Musique" => [
-        ['texte' => "Est-ce que tu arrives à travailler dur pendant des heures pour perfectionner quelque chose qui te passionne ?", 'trait' => 'creativite'],
-        ['texte' => "La musique t’aide-t-elle à exprimer tes émotions que tu n’arrives pas à dire autrement ?", 'trait' => 'creativite'],
-        ['texte' => "Te considères-tu comme quelqu’un de créatif, qui aime transformer ses idées en quelque chose de concret ?", 'trait' => 'creativite'],
-        ['texte' => "Te sens-tu transporté(e) quand tu écoutes une chanson qui résonne avec ton vécu ?", 'trait' => 'creativite'],
+        ['texte' => "Tu peux passer des heures à t’entraîner sur quelque chose qui te passionne ?", 'trait' => 'creativite'],
+        ['texte' => "La musique t’aide à dire ce que tu ne dirais pas autrement ?", 'trait' => 'creativite'],
+        ['texte' => "Tu te considères comme quelqu’un de créatif, qui aime donner forme à ses idées ?", 'trait' => 'creativite'],
+        ['texte' => "Une chanson peut-elle te toucher comme si elle racontait ton histoire ?", 'trait' => 'creativite'],
     ],
     "Litterature" => [
-        ['texte' => "Serais-tu capable de prendre la parole en public pour défendre une cause ?", 'trait' => 'leadership'],
-        ['texte' => "Est-ce que tu ressens le besoin d’exprimer tes émotions ou indignations par l’écriture ?", 'trait' => 'leadership'],
-        ['texte' => "Quand tu vois une injustice, est-ce que tu te sens poussé(e) à agir ou à en parler ?", 'trait' => 'leadership'],
-        ['texte' => "Pourrait tu etre le porte parole d'un mouvement ?", 'trait' => 'leadership'],
+        ['texte' => "Tu pourrais prendre la parole en public pour défendre une cause ?", 'trait' => 'leadership'],
+        ['texte' => "Tu ressens parfois le besoin d’écrire pour exprimer tes idées ou émotions ?", 'trait' => 'leadership'],
+        ['texte' => "Face à une injustice, tu ressens le besoin d’agir ou d’en parler ?", 'trait' => 'leadership'],
+        ['texte' => "Tu pourrais être la voix ou le porte-parole d’un groupe ?", 'trait' => 'leadership'],
     ],
     "Cinema" => [
-        ['texte' => "Aimes-tu être au centre de l’attention et briller dans un rôle ou une situation ?", 'trait' => 'perseverance'],
-        ['texte' => "Sais-tu garder ton calme et te concentrer sous pression ?", 'trait' => 'perseverance'],
-        ['texte' => "Es-tu persévérant(e) quand tu veux atteindre un objectif ?", 'trait' => 'perseverance'],
-        ['texte' => "Utilises-tu l’humour comme une arme pour faire face aux difficultés ?", 'trait' => 'perseverance'],
+        ['texte' => "Tu aimes être au centre de l’attention et jouer un rôle ?", 'trait' => 'perseverance'],
+        ['texte' => "Sais-tu garder ton calme quand la pression monte ?", 'trait' => 'perseverance'],
+        ['texte' => "Tu t’accroches vraiment quand tu as un objectif ?", 'trait' => 'perseverance'],
+        ['texte' => "Tu utilises parfois l’humour pour gérer les moments compliqués ?", 'trait' => 'perseverance'],
     ],
 ];
 
 // =====================
-// 2. Récupération de la catégorie depuis l'URL (corrigé)
+// 2. Catégorie choisie
 // =====================
-$categorieChoisieRaw = isset($_GET['categorie']) ? trim($_GET['categorie']) : '';
+$categorieChoisieRaw = $_GET['categorie'] ?? '';
 
-// Normalisation : suppression des accents et mise en majuscule pour comparaison
 function normalize($string) {
-    $string = mb_strtolower($string, 'UTF-8'); // tout en minuscules
-    $string = str_replace(['é','è','ê','ë','à','â','ä','ô','ö','ù','û','ü','î','ï','ç'], 
-                          ['e','e','e','e','a','a','a','o','o','u','u','u','i','i','c'], $string);
+    $string = mb_strtolower($string, 'UTF-8');
+    $string = str_replace(
+        ['é','è','ê','ë','à','â','ä','ô','ö','ù','û','ü','î','ï','ç'],
+        ['e','e','e','e','a','a','a','o','o','u','u','u','i','i','c'],
+        $string
+    );
     return $string;
 }
 
-// Trouver la catégorie correspondante dans le tableau $categories
 $categorieChoisie = null;
 foreach ($categories as $key => $val) {
     if (normalize($key) === normalize($categorieChoisieRaw)) {
-        $categorieChoisie = $key; // prend la clé exacte du tableau
+        $categorieChoisie = $key;
         break;
     }
 }
 
-// Si aucune catégorie correspondante, prendre la première par défaut
+// si rien trouvé, on prend la première
 if (!$categorieChoisie) {
     $categorieChoisie = array_key_first($categories); 
 }
 
-// Pour l'affichage
+// pour affichage
 $categorieChoisieDisplayed = $categorieChoisie == "Litterature" ? "Littérature engagée" : $categorieChoisie;
 
-
-
 // =====================
-// 3. Soumission du formulaire
+// 3. Sauvegarde des réponses
 // =====================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     foreach ($categories[$categorieChoisie] as $q) {
         $key = 'q_' . $q['trait'];
-        $reponse = isset($_POST[$key]) ? trim($_POST[$key]) : '';
-        // Stocke dans session par catégorie
-        $_SESSION['reponses'][$categorieChoisie][$key] = $reponse;
+        $reponse = $_POST[$key] ?? '';
+        $_SESSION['reponses'][$categorieChoisie][$key] = trim($reponse);
     }
-    // Redirection vers la page résultat
     header("Location: resultat_questionnaire.php?categorie=" . urlencode($categorieChoisie));
     exit;
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Questionnaire Mirror Me - <?= htmlspecialchars($categorieChoisieDisplayed) ?></title>
+<title>Questionnaire - <?= htmlspecialchars($categorieChoisieDisplayed) ?></title>
 <style>
 body { font-family: Arial, sans-serif; background: #f4f4f9; padding: 20px; }
 h1 { text-align:center; }
@@ -103,19 +99,13 @@ h2 { margin-top:30px; color:#333; text-align:center; }
 
 <div class="menu">
     <?php 
-    // dictionnaire pour corriger les noms affichés
-    $labels = [ 
-        "Litterature" => "Littérature engagée"
-    ];
-    ?>
-
-    <?php foreach(array_keys($categories) as $key): ?>
+    $labels = [ "Litterature" => "Littérature engagée" ];
+    foreach(array_keys($categories) as $key): ?>
         <a href="questionnaire.php?categorie=<?= urlencode($key) ?>">
             <?= htmlspecialchars($labels[$key] ?? $key) ?>
         </a>
     <?php endforeach; ?>
 </div>
-
 
 <h2><?= htmlspecialchars($categorieChoisieDisplayed) ?></h2>
 
@@ -123,10 +113,10 @@ h2 { margin-top:30px; color:#333; text-align:center; }
     <?php foreach($categories[$categorieChoisie] as $q): ?>
         <div class="question">
             <label for="q_<?= $q['trait'] ?>"><?= $q['texte'] ?></label><br>
-            <input type="text" id="q_<?= $q['trait'] ?>" name="q_<?= $q['trait'] ?>" placeholder="Écris ta réponse ici">
+            <input type="text" id="q_<?= $q['trait'] ?>" name="q_<?= $q['trait'] ?>" placeholder="Ta réponse ici...">
         </div>
     <?php endforeach; ?>
-    <button type="submit">Valider le questionnaire</button>
+    <button type="submit">Envoyer</button>
 </form>
 
 </body>

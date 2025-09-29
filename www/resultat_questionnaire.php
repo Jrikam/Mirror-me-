@@ -1,71 +1,60 @@
 <?php
 session_start();
-require 'pdo.php'; // connexion PDO
+require 'pdo.php'; // connexion bdd
 
-// -------------------------------
-// 1) Normalisation catégorie sûre
-// -------------------------------
-function normalize_categorie($raw) {
-    if (!$raw) return 'Sport';
-    $s = strtolower(trim($raw));
-    $s = str_replace(['_', '-'], ' ', $s);
+// --------- Choix catégorie ---------
+function normaliserCategorie($cat) {
+    if (empty($cat)) return 'Sport';
 
-    // mappings directs
-    $map = [
-        'sport' => 'Sport',
-        'cinema' => 'Cinema',
-        'musique' => 'Musique',
-        'comédie' => 'Comédie',
-        'comedie' => 'Comédie',
+    $c = strtolower(trim($cat));
+    $c = str_replace(['-', '_'], ' ', $c);
+
+    $correspondances = [
+        'sport'       => 'Sport',
+        'cinema'      => 'Cinema',
+        'musique'     => 'Musique',
         'litterature' => 'Litterature',
+        'comedie'     => 'Comédie',
+        'comédie'     => 'Comédie'
     ];
-    if (isset($map[$s])) return $map[$s];
 
-    // fallback "contient"
-    foreach ($map as $k => $v) {
-        if (strpos($s, $k) !== false) return $v;
+    if (isset($correspondances[$c])) return $correspondances[$c];
+
+    foreach ($correspondances as $k => $v) {
+        if (strpos($c, $k) !== false) return $v;
     }
-    // valeur sûre
+
     return 'Sport';
 }
 
-$categorieChoisie = normalize_categorie($_GET['categorie'] ?? ($_SESSION['categorie'] ?? 'Sport'));
+$categorieChoisie = normaliserCategorie($_GET['categorie'] ?? ($_SESSION['categorie'] ?? 'Sport'));
 
-// -------------------------------
-// 2) Vérification des réponses
-// -------------------------------
-if (!isset($_SESSION['reponses']) || !is_array($_SESSION['reponses'])) {
-    echo "Aucune réponse enregistrée. <a href='questionnaire.php'>Faire le questionnaire</a>";
+// --------- Vérif réponses ---------
+if (empty($_SESSION['reponses']) || !is_array($_SESSION['reponses'])) {
+    echo "Aucune réponse enregistrée. <a href='questionnaire.php'>Retour au questionnaire</a>";
     exit;
 }
 
-// ---------------------------------------------------------
-// 3) Scoring des réponses (positif / neutre / négatif)
-// ---------------------------------------------------------
-function normalize_text($s) {
-    // Si c'est un tableau, on le transforme en texte
-    if (is_array($s)) {
-        $s = implode(' ', $s);
-    }
-    $s = mb_strtolower($s ?? '', 'UTF-8');
+// --------- Fonction pour nettoyer texte ---------
+function nettoieTexte($txt) {
+    if (is_array($txt)) $txt = implode(' ', $txt);
+    $txt = mb_strtolower($txt ?? '', 'UTF-8');
     if (function_exists('iconv')) {
-        $t = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $s);
-        if ($t !== false) $s = strtolower($t);
+        $tmp = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $txt);
+        if ($tmp !== false) $txt = strtolower($tmp);
     }
-    return $s;
+    return $txt;
 }
 
-
-// Définition des traits par catégorie
-$mappedTrait = [
-    'Sport'              => 'confiance',
-    'Musique'            => 'creativite',
-    'Litterature'=> 'leadership',
-    'Cinema'             => 'perseverance',
+// --------- Table correspondance traits ---------
+$traitCategorie = [
+    'Sport'       => 'confiance',
+    'Musique'     => 'creativite',
+    'Litterature' => 'leadership',
+    'Cinema'      => 'perseverance',
 ];
 
-
-// Init traits
+// Base des traits
 $traits = [
     'confiance'    => 0,
     'creativite'   => 0,
@@ -73,16 +62,11 @@ $traits = [
     'perseverance' => 0,
 ];
 
-// Mots-clés
-$positifs = [
-    'oui','capable','facile','confiant','motivé','motivation',
-    'je peux','je veux','reussi','ok','prêt','prete','possible',
-    'aisance','orale','parler','exprimer','fort','facilement'
-];
+// --------- Mots-clés ---------
+$motsPos = ['oui','capable','facile','motivé','motivation','je peux','je veux','reussi','ok','prêt','prete','possible','aisance','parler','exprimer','fort','facilement'];
+$motsNeg = ['non','pas','peur','difficile','impossible','timide','incapable','decourage','décourage','fatigu','stress','anxieux','anxieuse','anxiete','rate','echoue','échec'];
 
-$negatifs = ['non','pas','peur','difficile','impossible','incapable','timide','decourage','décourage','fatigu','stress','anxieux','anxieuse','anxiete','rate','echoue','échec'];
-
-// Extraction des réponses pour la catégorie
+// --------- Récup réponses ---------
 $reponses = [];
 $needle = strtolower(str_replace(' ', '', $categorieChoisie));
 foreach ($_SESSION['reponses'] as $k => $v) {
@@ -92,113 +76,104 @@ foreach ($_SESSION['reponses'] as $k => $v) {
     }
 }
 
-// Score
-$traitCateg = $mappedTrait[$categorieChoisie] ?? 'confiance';
-$nbQuestions = max(0, count($reponses));
-$scoreAccumule = 0;
+// --------- Calcul score ---------
+$trait = $traitCategorie[$categorieChoisie] ?? 'confiance';
+$nbQ   = count($reponses);
+$score = 0;
 
-foreach ($reponses as $q => $r) {
-    $rn = normalize_text($r);
-    $score = 30; // neutre
-    $hasPos = false;
-    $hasNeg = false;
+foreach ($reponses as $rep) {
+    $txt = nettoieTexte($rep);
+    $val = 30; // neutre
 
-    foreach ($positifs as $w) if (strpos($rn, $w) !== false) { $hasPos = true; break; }
-    foreach ($negatifs as $w) if (strpos($rn, $w) !== false) { $hasNeg = true; break; }
+    foreach ($motsNeg as $w) if (strpos($txt, $w) !== false) { $val = 10; break; }
+    foreach ($motsPos as $w) if (strpos($txt, $w) !== false) { $val = 50; break; }
 
-    if ($hasNeg) $score = 10;
-    elseif ($hasPos) $score = 50;
-    else $score = 30;
-
-    $traits[$traitCateg] += $score;
-    $scoreAccumule += $score;
+    $traits[$trait] += $val;
+    $score += $val;
 }
 
-// Calcul pourcentage
-$scoreMax = max(1, $nbQuestions) * 50;
-$pourcentage_trait = $nbQuestions > 0 ? round(($traits[$traitCateg]/$scoreMax)*100) : 0;
-$pourcentage_trait = max(0, min(100, $pourcentage_trait));
+$max = max(1, $nbQ) * 50;
+$pourcent = $nbQ > 0 ? round(($traits[$trait] / $max) * 100) : 0;
+$pourcent = max(0, min(100, $pourcent));
 
-// -------------------------------
-// 4) Star aléatoire
-// -------------------------------
-$stmt = $pdo->prepare("SELECT * FROM stars WHERE categorie = :categorie ORDER BY RAND() LIMIT 1");
-$stmt->execute(['categorie' => $categorieChoisie]);
+// --------- Star associée ---------
+$stmt = $pdo->prepare("SELECT * FROM stars WHERE categorie = :cat ORDER BY RAND() LIMIT 1");
+$stmt->execute(['cat' => $categorieChoisie]);
 $star = $stmt->fetch(PDO::FETCH_ASSOC);
-$image_path = 'images/default.jpg';
-if (!empty($star['image_path']) && file_exists(__DIR__.'/'.$star['image_path'])) $image_path = $star['image_path'];
 
-// -------------------------------
-// 5) Conseils dynamiques
-// -------------------------------
+$image = 'images/default.jpg';
+if (!empty($star['image_path']) && file_exists(__DIR__.'/'.$star['image_path'])) {
+    $image = $star['image_path'];
+}
+
+// --------- Conseils ---------
 $conseils = [
     'confiance' => [
-        'low' => ["Commence par des micro-défis.", "Respire, compte et agis progressivement."],
-        'mid' => ["Continue à sortir de ta zone de confort progressivement.", "Prépare-toi à l’avance."],
-        'high'=> ["Aide quelqu’un d’autre à oser.", "Vise une prise de parole plus ambitieuse."],
+        'low'  => ["Lance-toi des petits défis.", "Prends ton temps et avance étape par étape."],
+        'mid'  => ["Ose sortir de ta zone de confort petit à petit.", "Prépare-toi un peu plus à l’avance."],
+        'high' => ["Aide quelqu’un d’autre à prendre confiance.", "Tente une prise de parole plus grande."],
     ],
     'creativite' => [
-        'low' => ["Reproduis une œuvre que tu aimes puis modifie un détail.", "Fais un 'brain dump' sans te censurer."],
-        'mid' => ["Teste un format différent (audio, vidéo, collage).", "Fixe-toi un mini-projet créatif en 48h."],
-        'high'=> ["Partage ta création et demande un feedback.", "Monte un petit défi créatif avec des amis."],
+        'low'  => ["Reproduis une œuvre et change un détail.", "Note tout ce qui te passe par la tête sans filtre."],
+        'mid'  => ["Teste un nouveau format (audio, vidéo, dessin...).", "Donne-toi un mini-projet express."],
+        'high' => ["Partage tes créations et demande des avis.", "Lance un petit défi créatif avec des potes."],
     ],
     'leadership' => [
-        'low' => ["Commence par co-animer plutôt que mener seul.", "Prépare 2 questions ouvertes pour lancer un échange."],
-        'mid' => ["Organise une courte réunion avec ordre du jour clair.", "Donne un feedback positif précis."],
-        'high'=> ["Délègue une partie d’un projet et fais un suivi régulier.", "Propose une mini-initiative à ton groupe."],
+        'low'  => ["Commence par co-animer au lieu de diriger seul.", "Prépare deux questions ouvertes pour un échange."],
+        'mid'  => ["Organise une mini réunion claire et simple.", "Donne un feedback positif concret."],
+        'high' => ["Confie une tâche à quelqu’un et fais le suivi.", "Propose une petite initiative au groupe."],
     ],
     'perseverance' => [
-        'low' => ["Commence 10 min sans pression.", "Avance de 1% par jour.","Croire en toi est déjà un grand pas"],
-        'mid' => ["Suis tes habitudes et protège ton rythme.", "Prévois un plan B rapide si tu bloques."],
-        'high'=> ["Augmente légèrement la difficulté.", "Mentorise quelqu’un pour consolider ta persévérance."],
+        'low'  => ["Commence par 10 minutes sans pression.", "Avance un tout petit peu chaque jour."],
+        'mid'  => ["Protège ton rythme, reste régulier.", "Prévois un plan B si tu bloques."],
+        'high' => ["Augmente un peu la difficulté.", "Aide quelqu’un à persévérer aussi."],
     ],
 ];
 
-$niveau = ($pourcentage_trait < 40) ? 'low' : (($pourcentage_trait < 70) ? 'mid' : 'high');
-$listeConseils = $conseils[$traitCateg][$niveau] ?? [];
+$niveau = $pourcent < 40 ? 'low' : ($pourcent < 70 ? 'mid' : 'high');
+$listeConseils = $conseils[$trait][$niveau] ?? [];
 shuffle($listeConseils);
-
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Résultat Questionnaire - <?= htmlspecialchars($categorieChoisie) ?></title>
+<title>Résultat - <?= htmlspecialchars($categorieChoisie) ?></title>
 <style>
-body{font-family:Arial,sans-serif;background:#f4f4f9;padding:20px;text-align:center;}
-.card{background:#fff;border-radius:12px;padding:16px;margin:14px auto;max-width:720px;box-shadow:0 2px 6px rgba(0,0,0,0.08);}
-.progress-bar{width:100%;background:#e7e7ec;border-radius:20px;overflow:hidden;height:26px;}
-.progress{height:26px;background:#4CAF50;width:0%;color:#fff;line-height:26px;font-weight:bold;}
-img{max-width:220px;border-radius:10px;display:block;margin:0 auto 10px;}
+body{font-family:Arial,sans-serif;background:#f5f5f8;padding:20px;text-align:center;}
+.card{background:#fff;padding:16px;margin:14px auto;max-width:720px;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+.progress-bar{width:100%;background:#e0e0e0;border-radius:20px;overflow:hidden;height:26px;}
+.progress{height:26px;background:#4CAF50;color:#fff;line-height:26px;font-weight:bold;}
+img{max-width:220px;border-radius:8px;margin:0 auto 10px;display:block;}
 ul{text-align:left;max-width:680px;margin:0 auto;}
+a.btn{display:inline-block;margin:8px;padding:10px 16px;border-radius:8px;background:#2f76ff;color:#fff;text-decoration:none;font-weight:bold;}
 .muted{color:#666;font-size:14px;}
-a.btn{display:inline-block;padding:10px 16px;border-radius:10px;background:#2f76ff;color:#fff;text-decoration:none;font-weight:600;margin:8px;}
 </style>
 </head>
 <body>
 
-<h1>Ton icône correspondante – <?= htmlspecialchars($categorieChoisie) ?></h1>
+<h1>Ton résultat – <?= htmlspecialchars($categorieChoisie) ?></h1>
 
 <div class="card">
     <?php if ($star): ?>
-        <img src="<?= htmlspecialchars($star['image_path'] ?? 'images/default.jpg') ?>" alt="<?= htmlspecialchars($star['nom'] ?? 'Icône') ?>">
+        <img src="<?= htmlspecialchars($image) ?>" alt="<?= htmlspecialchars($star['nom'] ?? 'Icône') ?>">
         <h2><?= htmlspecialchars($star['nom'] ?? 'Icône') ?></h2>
-        <p class="muted"><?= htmlspecialchars($star['description'] ?: 'Aucune description disponible.') ?></p>
-        <p><strong>Trait principal (star) :</strong> <?= htmlspecialchars($star['trait_principal'] ?? 'Non défini') ?></p>
+        <p class="muted"><?= htmlspecialchars($star['description'] ?? 'Pas de description') ?></p>
+        <p><strong>Trait principal :</strong> <?= htmlspecialchars($star['trait_principal'] ?? '-') ?></p>
     <?php else: ?>
-        <p>Aucune star trouvée pour cette catégorie.</p>
+        <p>Aucune star trouvée.</p>
     <?php endif; ?>
 </div>
 
 <div class="card">
-    <h3>Progression de ton trait dominant : <?= ucfirst($traitCateg) ?></h3>
+    <h3>Ton trait dominant : <?= ucfirst($trait) ?></h3>
     <div class="progress-bar">
-        <div class="progress" style="width: <?= (int)$pourcentage_trait ?>%;"><?= (int)$pourcentage_trait ?>%</div>
+        <div class="progress" style="width:<?= $pourcent ?>%"><?= $pourcent ?>%</div>
     </div>
 </div>
 
 <div class="card">
-    <h3>Conseils personnalisés</h3>
+    <h3>Quelques conseils</h3>
     <ul>
         <?php foreach ($listeConseils as $c): ?>
             <li><?= htmlspecialchars($c) ?></li>
@@ -207,8 +182,8 @@ a.btn{display:inline-block;padding:10px 16px;border-radius:10px;background:#2f76
 </div>
 
 <div class="card">
-    <a class="btn" href="journal.php?categorie=<?= urlencode($categorieChoisie) ?>">Accéder à ton journal 📔</a>
-    <a class="btn" href="questionnaire.php?categorie=<?= urlencode($categorieChoisie) ?>">Refaire le questionnaire</a>
+    <a class="btn" href="journal.php?categorie=<?= urlencode($categorieChoisie) ?>">Voir ton journal 📔</a>
+    <a class="btn" href="questionnaire.php?categorie=<?= urlencode($categorieChoisie) ?>">Refaire le test</a>
 </div>
 
 </body>

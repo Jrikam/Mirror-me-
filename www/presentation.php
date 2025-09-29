@@ -54,4 +54,4 @@ if (isset($_SESSION['user_id'])) {
         <p>© 2025 MirrorMe - Tous droits réservés</p>
     </footer>
 </body>
-</html>wwp
+</html>
