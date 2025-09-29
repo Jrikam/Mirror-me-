@@ -70,4 +70,18 @@ CREATE TABLE journal_entries (
   date_checked DATETIME NOT NULL,
   UNIQUE KEY(utilisateur_id,objectif_id) );
 
+CREATE TABLE progression (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    journal_id INT NOT NULL,
+    utilisateur_id INT NOT NULL,
+    etape INT DEFAULT 0,
+    date_update DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE tips_journal (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    objectif_journal_id INT NOT NULL,
+    tip TEXT NOT NULL,
+    FOREIGN KEY (objectif_journal_id) REFERENCES objectifs_journal(id) ON DELETE CASCADE
+);
 

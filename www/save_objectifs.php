@@ -1,24 +1,33 @@
 <?php
 session_start();
-require_once 'pdo.php';
+require_once __DIR__ . '/pdo.php';
 
-$user_id = $_SESSION['user_id'] ?? 1;
-
-// Récupérer les objectifs cochés depuis le formulaire
-$objectifs_coches = $_POST['objectifs'] ?? [];
-
-// Supprimer les anciennes sélections pour l'utilisateur
-$stmt = $pdo->prepare("DELETE FROM user_objectives WHERE utilisateur_id = ?");
-$stmt->execute([$user_id]);
-
-// Insérer les nouveaux objectifs cochés avec date_checked
-if (!empty($objectifs_coches)) {
-    $stmt = $pdo->prepare("INSERT INTO user_objectives (utilisateur_id, objectif_id, date_checked) VALUES (?, ?, NOW())");
-    foreach ($objectifs_coches as $id_obj) {
-        $stmt->execute([$user_id, $id_obj]);
-    }
+if (!isset($_SESSION['user_id'])) {
+    header('Location: connexion.php');
+    exit;
 }
 
-// Redirection vers la page objectifs pour recalculer la progression
-header("Location: objectifs.php");
+$user_id = $_SESSION['user_id'];
+$journal_id = $_GET['journal_id'] ?? null;
+
+if (!$journal_id) {
+    exit('Journal non défini.');
+}
+
+// Récupérer les objectifs cochés dans le formulaire
+$objectifs_coches = $_POST['objectifs'] ?? [];
+
+// Supprimer les anciennes entrées pour ce journal
+$stmt = $pdo->prepare("DELETE FROM user_objectives WHERE utilisateur_id = ? AND journal_id = ?");
+$stmt->execute([$user_id, $journal_id]);
+
+// Ajouter les nouvelles entrées
+$stmtInsert = $pdo->prepare("INSERT INTO user_objectives (utilisateur_id, journal_id, objectif_id, fait, date_checked) VALUES (?, ?, ?, 1, NOW())");
+
+foreach ($objectifs_coches as $obj_id) {
+    $stmtInsert->execute([$user_id, $journal_id, $obj_id]);
+}
+
+// 3️⃣ 🔹 Redirection automatique vers journal.php
+header("Location: journal.php");
 exit;

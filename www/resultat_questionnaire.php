@@ -1,14 +1,12 @@
 <?php
 session_start();
-require 'pdo.php'; // connexion bdd
+require 'pdo.php'; // connexion BDD
 
 // --------- Choix catégorie ---------
 function normaliserCategorie($cat) {
     if (empty($cat)) return 'Sport';
-
     $c = strtolower(trim($cat));
     $c = str_replace(['-', '_'], ' ', $c);
-
     $correspondances = [
         'sport'       => 'Sport',
         'cinema'      => 'Cinema',
@@ -17,13 +15,10 @@ function normaliserCategorie($cat) {
         'comedie'     => 'Comédie',
         'comédie'     => 'Comédie'
     ];
-
     if (isset($correspondances[$c])) return $correspondances[$c];
-
     foreach ($correspondances as $k => $v) {
         if (strpos($c, $k) !== false) return $v;
     }
-
     return 'Sport';
 }
 
@@ -35,7 +30,7 @@ if (empty($_SESSION['reponses']) || !is_array($_SESSION['reponses'])) {
     exit;
 }
 
-// --------- Fonction pour nettoyer texte ---------
+// --------- Nettoyage texte ---------
 function nettoieTexte($txt) {
     if (is_array($txt)) $txt = implode(' ', $txt);
     $txt = mb_strtolower($txt ?? '', 'UTF-8');
@@ -46,7 +41,7 @@ function nettoieTexte($txt) {
     return $txt;
 }
 
-// --------- Table correspondance traits ---------
+// --------- Traits et mots-clés ---------
 $traitCategorie = [
     'Sport'       => 'confiance',
     'Musique'     => 'creativite',
@@ -54,15 +49,7 @@ $traitCategorie = [
     'Cinema'      => 'perseverance',
 ];
 
-// Base des traits
-$traits = [
-    'confiance'    => 0,
-    'creativite'   => 0,
-    'leadership'   => 0,
-    'perseverance' => 0,
-];
-
-// --------- Mots-clés ---------
+$traits = ['confiance'=>0,'creativite'=>0,'leadership'=>0,'perseverance'=>0];
 $motsPos = ['oui','capable','facile','motivé','motivation','je peux','je veux','reussi','ok','prêt','prete','possible','aisance','parler','exprimer','fort','facilement'];
 $motsNeg = ['non','pas','peur','difficile','impossible','timide','incapable','decourage','décourage','fatigu','stress','anxieux','anxieuse','anxiete','rate','echoue','échec'];
 
@@ -84,10 +71,8 @@ $score = 0;
 foreach ($reponses as $rep) {
     $txt = nettoieTexte($rep);
     $val = 30; // neutre
-
     foreach ($motsNeg as $w) if (strpos($txt, $w) !== false) { $val = 10; break; }
     foreach ($motsPos as $w) if (strpos($txt, $w) !== false) { $val = 50; break; }
-
     $traits[$trait] += $val;
     $score += $val;
 }
@@ -96,38 +81,27 @@ $max = max(1, $nbQ) * 50;
 $pourcent = $nbQ > 0 ? round(($traits[$trait] / $max) * 100) : 0;
 $pourcent = max(0, min(100, $pourcent));
 
-// --------- Star associée ---------
+// --------- Star associée (une par catégorie) ---------
 $stmt = $pdo->prepare("SELECT * FROM stars WHERE categorie = :cat ORDER BY RAND() LIMIT 1");
 $stmt->execute(['cat' => $categorieChoisie]);
 $star = $stmt->fetch(PDO::FETCH_ASSOC);
 
-$image = 'images/default.jpg';
-if (!empty($star['image_path']) && file_exists(__DIR__.'/'.$star['image_path'])) {
-    $image = $star['image_path'];
-}
+$image = $star['image_path'] ?? 'images/default.jpg';
 
 // --------- Conseils ---------
 $conseils = [
-    'confiance' => [
-        'low'  => ["Lance-toi des petits défis.", "Prends ton temps et avance étape par étape."],
-        'mid'  => ["Ose sortir de ta zone de confort petit à petit.", "Prépare-toi un peu plus à l’avance."],
-        'high' => ["Aide quelqu’un d’autre à prendre confiance.", "Tente une prise de parole plus grande."],
-    ],
-    'creativite' => [
-        'low'  => ["Reproduis une œuvre et change un détail.", "Note tout ce qui te passe par la tête sans filtre."],
-        'mid'  => ["Teste un nouveau format (audio, vidéo, dessin...).", "Donne-toi un mini-projet express."],
-        'high' => ["Partage tes créations et demande des avis.", "Lance un petit défi créatif avec des potes."],
-    ],
-    'leadership' => [
-        'low'  => ["Commence par co-animer au lieu de diriger seul.", "Prépare deux questions ouvertes pour un échange."],
-        'mid'  => ["Organise une mini réunion claire et simple.", "Donne un feedback positif concret."],
-        'high' => ["Confie une tâche à quelqu’un et fais le suivi.", "Propose une petite initiative au groupe."],
-    ],
-    'perseverance' => [
-        'low'  => ["Commence par 10 minutes sans pression.", "Avance un tout petit peu chaque jour."],
-        'mid'  => ["Protège ton rythme, reste régulier.", "Prévois un plan B si tu bloques."],
-        'high' => ["Augmente un peu la difficulté.", "Aide quelqu’un à persévérer aussi."],
-    ],
+    'confiance'=>['low'=>["Lance-toi des petits défis.","Prends ton temps et avance étape par étape."],
+                  'mid'=>["Ose sortir de ta zone de confort petit à petit.","Prépare-toi un peu plus à l’avance."],
+                  'high'=>["Aide quelqu’un d’autre à prendre confiance.","Tente une prise de parole plus grande."]],
+    'creativite'=>['low'=>["Reproduis une œuvre et change un détail.","Note tout ce qui te passe par la tête sans filtre."],
+                   'mid'=>["Teste un nouveau format (audio, vidéo, dessin...).","Donne-toi un mini-projet express."],
+                   'high'=>["Partage tes créations et demande des avis.","Lance un petit défi créatif avec des potes."]],
+    'leadership'=>['low'=>["Commence par co-animer au lieu de diriger seul.","Prépare deux questions ouvertes pour un échange."],
+                   'mid'=>["Organise une mini réunion claire et simple.","Donne un feedback positif concret."],
+                   'high'=>["Confie une tâche à quelqu’un et fais le suivi.","Propose une petite initiative au groupe."]],
+    'perseverance'=>['low'=>["Commence par 10 minutes sans pression.","Avance un tout petit peu chaque jour."],
+                     'mid'=>["Protège ton rythme, reste régulier.","Prévois un plan B si tu bloques."],
+                     'high'=>["Augmente un peu la difficulté.","Aide quelqu’un à persévérer aussi."]],
 ];
 
 $niveau = $pourcent < 40 ? 'low' : ($pourcent < 70 ? 'mid' : 'high');
@@ -161,7 +135,7 @@ a.btn{display:inline-block;margin:8px;padding:10px 16px;border-radius:8px;backgr
         <p class="muted"><?= htmlspecialchars($star['description'] ?? 'Pas de description') ?></p>
         <p><strong>Trait principal :</strong> <?= htmlspecialchars($star['trait_principal'] ?? '-') ?></p>
     <?php else: ?>
-        <p>Aucune star trouvée.</p>
+        <p>Aucune star trouvée pour la catégorie <?= htmlspecialchars($categorieChoisie) ?>.</p>
     <?php endif; ?>
 </div>
 
