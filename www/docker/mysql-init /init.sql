@@ -16,8 +16,7 @@ CREATE TABLE stars (
   nom VARCHAR(100) NOT NULL,
   domaine VARCHAR(100),
   image VARCHAR(255),   
-  description TEXT,    
-  qualities TEXT
+  description TEXT,          
 );
 
 CREATE TABLE ressemblances (
