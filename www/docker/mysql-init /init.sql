@@ -84,3 +84,28 @@ CREATE TABLE tips_journal (
     FOREIGN KEY (objectif_journal_id) REFERENCES objectifs_journal(id) ON DELETE CASCADE
 );
 
+CREATE TABLE objectifs_journal (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  journal_id INT NOT NULL,
+  titre VARCHAR(255) NOT NULL,
+  etape INT DEFAULT 0,
+  date_update DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE tips (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  objectif_id INT NOT NULL,
+  tip VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE stars_temp (
+  id INT NOT NULL,
+  nom VARCHAR(100) NOT NULL,
+  trait_principal VARCHAR(100),
+  categorie VARCHAR(100),
+  domaine VARCHAR(100),
+  image_path VARCHAR(255),
+  description TEXT,
+  qualities TEXT,
+  image VARCHAR(255)
+);
